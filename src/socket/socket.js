@@ -1,198 +1,104 @@
+
 let socket = null;
 
-
-// ==========================================
 // Connect WebSocket
-// ==========================================
-
-export const connectSocket = (
-  room,
-  token
-) => {
-
+export const connectSocket = (room, token) => {
   if (!room || !token) {
-
-    console.error(
-      "❌ Room or token is missing"
-    );
-
+    console.error("Room or token is missing");
     return null;
   }
 
-
-  // ========================================
   // Close existing connection
-  // ========================================
-
   if (socket) {
-
     if (
       socket.readyState === WebSocket.OPEN ||
       socket.readyState === WebSocket.CONNECTING
     ) {
-
       socket.close();
-
     }
 
     socket = null;
   }
 
+  // Get WebSocket base URL from environment variables
+  const wsBaseUrl = import.meta.env.VITE_WS_URL;
 
-  // ========================================
-  // WebSocket URL
-  // ========================================
+  if (!wsBaseUrl) {
+    console.error("VITE_WS_URL is not configured");
+    return null;
+  }
 
   const wsUrl =
-    `ws://127.0.0.1:8000/ws/${encodeURIComponent(room)}` +
+    `${wsBaseUrl.replace(/\/+$/, "")}/ws/${encodeURIComponent(room)}` +
     `?token=${encodeURIComponent(token)}`;
 
-
-  // ========================================
-  // Create WebSocket
-  // ========================================
-
+  // Create WebSocket connection
   socket = new WebSocket(wsUrl);
 
-
-  // ========================================
-  // Connection Open
-  // ========================================
-
-  socket.onopen = () => {
-    // WebSocket connected
-  };
-
-
-  // ========================================
-  // Connection Error
-  // ========================================
-
   socket.onerror = (error) => {
-
-    console.error(
-      "❌ WebSocket Error:",
-      error
-    );
-
+    console.error("WebSocket Error:", error);
   };
-
-
-  // ========================================
-  // Connection Closed
-  // ========================================
 
   socket.onclose = (event) => {
-    // WebSocket closed
+    console.log(
+      "WebSocket closed:",
+      event.code,
+      event.reason || "No reason provided"
+    );
   };
 
+  socket.onopen = () => {
+    console.log("WebSocket connected successfully");
+  };
 
   return socket;
 };
 
-
-// ==========================================
-// Get Current Socket
-// ==========================================
-
+// Get current socket
 export const getSocket = () => {
-
   return socket;
-
 };
 
-
-// ==========================================
-// Send WebSocket Message
-// ==========================================
-
-export const sendSocketMessage = (
-  data
-) => {
-
+// Send WebSocket message
+export const sendSocketMessage = (data) => {
   if (!socket) {
-
-    console.error(
-      "❌ WebSocket is not initialized"
-    );
-
+    console.error("WebSocket is not initialized");
     return false;
   }
 
-
-  if (
-    socket.readyState !==
-    WebSocket.OPEN
-  ) {
-
-    console.error(
-      "❌ WebSocket is not connected"
-    );
-
+  if (socket.readyState !== WebSocket.OPEN) {
+    console.error("WebSocket is not connected");
     return false;
   }
-
 
   try {
-
-    socket.send(
-      JSON.stringify(data)
-    );
-
+    socket.send(JSON.stringify(data));
     return true;
-
   } catch (error) {
-
-    console.error(
-      "❌ Failed to send WebSocket message:",
-      error
-    );
-
+    console.error("Failed to send WebSocket message:", error);
     return false;
-
   }
-
 };
 
-
-// ==========================================
 // Disconnect WebSocket
-// ==========================================
-
 export const disconnectSocket = () => {
-
   if (!socket) {
     return;
   }
-
 
   if (
     socket.readyState === WebSocket.OPEN ||
     socket.readyState === WebSocket.CONNECTING
   ) {
-
     socket.close();
-
   }
 
-
   socket = null;
-
 };
 
-
-// ==========================================
-// Default Export
-// ==========================================
-
 export default {
-
   connectSocket,
-
   getSocket,
-
   sendSocketMessage,
-
   disconnectSocket,
-
 };
